@@ -140,10 +140,10 @@ function App() {
           )}
         </div>
         <div>
-          <p> Address :</p>
-          <p>{addr1}</p>
           {isConnected === true ? (
             <>
+              <p> Address :</p>
+              <p>{addr1}</p>
               <p>Balance :</p>
               <p>{bal1}</p>
 
