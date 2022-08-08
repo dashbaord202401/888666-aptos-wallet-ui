@@ -45,6 +45,7 @@ function App() {
   const [chkBal, setChkBal] = useState("");
   const [mnemonic, setMnemonic] = useState("");
   const [txHash, setTxHash] = useState([]);
+  const [txns, setTxns] = useState([]);
 
   const create = async () => {
     const mnemonic = bip39.generateMnemonic(english.wordlist); // mnemonic
@@ -118,7 +119,7 @@ function App() {
       bigInt(sequenceNumber),
       scriptFunctionPayload,
       // Max gas unit to spend
-      2000n,
+      1000n,
       // Gas price per unit
       1n,
       // Expiration timestamp. Transaction is discarded if it is not executed within 10 seconds from now.
@@ -143,6 +144,7 @@ function App() {
     setAddr1(account1.address().hexString);
     // setPrivate1(accountMetaData[0].privateKeyHex);
     setIsConnected(true);
+    setIsImporting(false);
     let resources = await client.getAccountResources(account1.address());
     // Find Aptos coin resourse
     let accountResource = resources.find(
@@ -154,6 +156,25 @@ function App() {
   };
   const selectImportAccount = () => {
     setIsImporting(true);
+  };
+  const getTxns = async function accountTransactions() {
+    const data = await client.getAccountTransactions(addr1);
+    const transactions = data.map((item) => ({
+      data: item.payload,
+      from: item.sender,
+      gas: item.gas_used,
+      gasPrice: item.gas_unit_price,
+      hash: item.hash,
+      success: item.success,
+      timestamp: item.timestamp,
+      toAddress: item.payload.arguments[0],
+      price: item.payload.arguments[1],
+      type: item.type,
+      version: item.version,
+      vmStatus: item.vm_status,
+    }));
+    console.log("transactions :", transactions);
+    setTxns(...transactions);
   };
   return (
     <div className="App">
@@ -179,7 +200,10 @@ function App() {
               <button onClick={selectImportAccount}>Import Account</button>
             </>
           ) : (
-            <button onClick={balance}> Refresh </button>
+            <>
+              <button onClick={balance}> Refresh </button>
+              <button onClick={getTxns}> Previous Txns </button>
+            </>
           )}
           {isImporting === true ? (
             <>
