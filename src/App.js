@@ -1,5 +1,10 @@
 import React, { useState } from "react";
 import bigInt from "big-integer";
+import * as bip39 from "@scure/bip39";
+import * as english from "@scure/bip39/wordlists/english";
+import { HDKey } from "@scure/bip32";
+import { Buffer } from "buffer/";
+// import fetch from "cross-fetch";
 import {
   AptosClient,
   AptosAccount,
@@ -22,23 +27,37 @@ const {
   RawTransaction,
   ChainId,
 } = TxnBuilderTypes;
+
+const COIN_TYPE = 637;
+
 const client = new AptosClient(NODE_URL);
 const faucetClient = new FaucetClient(NODE_URL, FAUCET_URL);
 var account1;
 function App() {
   const [addr1, setAddr1] = useState("");
+  const [seed, setSeed] = useState("");
   const [recAddr, setRecAddr] = useState("");
   const [isConnected, setIsConnected] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const [bal1, setBal1] = useState(null);
   const [sendAmount, setSendAmount] = useState("");
   const [balChkAddr, setBalChkAddr] = useState("");
   const [chkBal, setChkBal] = useState("");
+  const [mnemonic, setMnemonic] = useState("");
   const [txHash, setTxHash] = useState([]);
+
   const create = async () => {
-    account1 = new AptosAccount();
+    const mnemonic = bip39.generateMnemonic(english.wordlist); // mnemonic
+    setSeed(mnemonic);
+    const seed = bip39.mnemonicToSeedSync(mnemonic.toString());
+    const node = HDKey.fromMasterSeed(Buffer.from(seed));
+    const derivationPath = `m/44'/${COIN_TYPE}'/0'/0/0`;
+    const exKey = node.derive(derivationPath);
+    account1 = new AptosAccount(exKey.privateKey);
+    console.log(account1);
     setAddr1(account1.address().hexString);
     setIsConnected(true);
-    await faucetClient.fundAccount(account1.address(), 10000);
+    await faucetClient.fundAccount(account1.address(), 20000);
     let resources = await client.getAccountResources(
       account1.address().hexString
     );
@@ -115,6 +134,27 @@ function App() {
     balance();
     setTxHash([transactionRes.hash, ...txHash]);
   };
+  const importAccount = async () => {
+    const seed = bip39.mnemonicToSeedSync(mnemonic.toString());
+    const node = HDKey.fromMasterSeed(Buffer.from(seed));
+    const exKey = node.derive(`m/44'/${COIN_TYPE}'/0'/0/0`);
+    account1 = new AptosAccount(exKey.privateKey);
+    console.log("account222 : ", account1);
+    setAddr1(account1.address().hexString);
+    // setPrivate1(accountMetaData[0].privateKeyHex);
+    setIsConnected(true);
+    let resources = await client.getAccountResources(account1.address());
+    // Find Aptos coin resourse
+    let accountResource = resources.find(
+      (r) => r.type === "0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>"
+    );
+    setBal1(parseInt(accountResource?.data.coin.value));
+    console.log("mnemonic :", mnemonic);
+    // console.log(account1);
+  };
+  const selectImportAccount = () => {
+    setIsImporting(true);
+  };
   return (
     <div className="App">
       <h1>Aptos Wallet</h1>
@@ -133,17 +173,33 @@ function App() {
         <div style={{ padding: "5px" }}>
           <h2>Account</h2>
 
-          {isConnected === false ? (
-            <button onClick={create}>Create Account</button>
+          {isConnected === false && isImporting === false ? (
+            <>
+              <button onClick={create}>Create Account</button>
+              <button onClick={selectImportAccount}>Import Account</button>
+            </>
           ) : (
             <button onClick={balance}> Refresh </button>
           )}
+          {isImporting === true ? (
+            <>
+              <input
+                type={"text"}
+                placeholder={"Enter Mnemonic Phrase"}
+                onChange={(e) => setMnemonic(e.target.value)}
+                value={mnemonic}
+              ></input>
+              <button onClick={importAccount}>Import</button>
+            </>
+          ) : null}
         </div>
         <div>
           {isConnected === true ? (
             <>
               <p> Address :</p>
               <p>{addr1}</p>
+              <p> Seed :</p>
+              <p>{seed}</p>
               <p>Balance :</p>
               <p>{bal1}</p>
 
