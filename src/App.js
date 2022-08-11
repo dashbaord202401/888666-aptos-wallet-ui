@@ -1,18 +1,12 @@
 import React, { useState } from "react";
-import * as bip39 from "@scure/bip39";
-import { HDKey } from "@scure/bip32";
-import { Buffer } from "buffer/";
+
 import { WalletClient } from "./aptos-api";
-import { AptosClient, AptosAccount } from "aptos";
 import "./App.css";
 const NODE_URL =
   process.env.APTOS_NODE_URL || "https://fullnode.devnet.aptoslabs.com";
 const FAUCET_URL =
   process.env.APTOS_FAUCET_URL || "https://faucet.devnet.aptoslabs.com";
 
-const COIN_TYPE = 637;
-
-const client = new AptosClient(NODE_URL);
 const walletClient = new WalletClient(NODE_URL, FAUCET_URL);
 var account1;
 function App() {
@@ -30,7 +24,9 @@ function App() {
   const [txns, setTxns] = useState([]);
 
   const create = async () => {
-    account1 = await walletClient.createNewAccount();
+    let { account, mnemonic } = await walletClient.createNewAccount();
+    account1 = account;
+    setSeed(mnemonic);
     setAddr1(account1.address().hexString);
     setIsConnected(true);
     setBal1(await walletClient.balance(account1.address()));
@@ -44,9 +40,9 @@ function App() {
     }
   };
   const sendToken = async () => {
-    console.log(account1);
     let txnHash = await walletClient.sendToken(account1, recAddr, sendAmount);
     balance();
+    console.log("txnHash2", txnHash);
     setTxHash([txnHash, ...txHash]);
   };
   const importAccount = async () => {

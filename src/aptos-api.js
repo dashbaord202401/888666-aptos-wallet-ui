@@ -54,7 +54,7 @@ export class WalletClient {
       );
       if (response.status === 404) {
         await this.faucet.fundAccount(account.authKey(), 20000);
-        return account;
+        return { account, mnemonic };
       }
       /* eslint-enable no-await-in-loop */
     }
@@ -190,12 +190,9 @@ export class WalletClient {
       bigInt(Math.floor(Date.now() / 1000) + 10),
       new ChainId(chainId)
     );
-    const bcsTxn = AptosClient.generateBCSTransaction(
-      fromAccount.address(),
-      rawTxn
-    );
+    const bcsTxn = AptosClient.generateBCSTransaction(fromAccount, rawTxn);
     const transactionRes = await this.client.submitSignedBCSTransaction(bcsTxn);
-    let txnHash = await this.client.waitForTransaction(transactionRes.hash);
-    return txnHash;
+    await this.client.waitForTransaction(transactionRes.hash);
+    return transactionRes.hash;
   }
 }
