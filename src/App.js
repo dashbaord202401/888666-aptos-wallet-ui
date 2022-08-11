@@ -47,6 +47,7 @@ function App() {
   };
   const importAccount = async () => {
     account1 = await walletClient.getAccountFromMnemonic(mnemonic);
+    setSeed(mnemonic);
     console.log("account1 :", account1);
     setAddr1(account1.address().hexString);
     setIsConnected(true);
