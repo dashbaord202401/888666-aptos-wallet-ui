@@ -21,9 +21,6 @@ const {
   ChainId,
 } = TxnBuilderTypes;
 
-// const node_url = "https://fullnode.devnet.aptoslabs.com";
-// const faucet_url = "https://this..devnet.aptoslabs.com";
-
 const COIN_TYPE = 637;
 const MAX_ACCOUNTS = 5;
 const ADDRESS_GAP = 10;
