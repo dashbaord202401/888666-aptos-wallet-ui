@@ -1,37 +1,19 @@
 import React, { useState } from "react";
-import bigInt from "big-integer";
 import * as bip39 from "@scure/bip39";
-import * as english from "@scure/bip39/wordlists/english";
 import { HDKey } from "@scure/bip32";
 import { Buffer } from "buffer/";
-// import fetch from "cross-fetch";
-import {
-  AptosClient,
-  AptosAccount,
-  FaucetClient,
-  BCS,
-  TxnBuilderTypes,
-} from "aptos";
+import { WalletClient } from "./aptos-api";
+import { AptosClient, AptosAccount } from "aptos";
 import "./App.css";
 const NODE_URL =
   process.env.APTOS_NODE_URL || "https://fullnode.devnet.aptoslabs.com";
 const FAUCET_URL =
   process.env.APTOS_FAUCET_URL || "https://faucet.devnet.aptoslabs.com";
 
-const {
-  AccountAddress,
-  TypeTagStruct,
-  ScriptFunction,
-  StructTag,
-  TransactionPayloadScriptFunction,
-  RawTransaction,
-  ChainId,
-} = TxnBuilderTypes;
-
 const COIN_TYPE = 637;
 
 const client = new AptosClient(NODE_URL);
-const faucetClient = new FaucetClient(NODE_URL, FAUCET_URL);
+const walletClient = new WalletClient(NODE_URL, FAUCET_URL);
 var account1;
 function App() {
   const [addr1, setAddr1] = useState("");
@@ -48,133 +30,36 @@ function App() {
   const [txns, setTxns] = useState([]);
 
   const create = async () => {
-    const mnemonic = bip39.generateMnemonic(english.wordlist); // mnemonic
-    setSeed(mnemonic);
-    const seed = bip39.mnemonicToSeedSync(mnemonic.toString());
-    const node = HDKey.fromMasterSeed(Buffer.from(seed));
-    const derivationPath = `m/44'/${COIN_TYPE}'/0'/0/0`;
-    const exKey = node.derive(derivationPath);
-    account1 = new AptosAccount(exKey.privateKey);
-    console.log(account1);
+    account1 = await walletClient.createNewAccount();
     setAddr1(account1.address().hexString);
     setIsConnected(true);
-    await faucetClient.fundAccount(account1.address(), 20000);
-    let resources = await client.getAccountResources(
-      account1.address().hexString
-    );
-    // Find Aptos coin resourse
-    let accountResource = resources.find(
-      (r) => r.type === "0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>"
-    );
-    setBal1(parseInt(accountResource?.data.coin.value));
+    setBal1(await walletClient.balance(account1.address()));
   };
   const balance = async () => {
-    if (addr1 !== "") {
-      let resources = await client.getAccountResources(addr1);
-      // Find Aptos coin resourse
-      let accountResource = resources.find(
-        (r) => r.type === "0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>"
-      );
-      setBal1(parseInt(accountResource?.data.coin.value));
-    }
+    setBal1(await walletClient.balance(addr1));
   };
   const checkBalance = async () => {
     if (balChkAddr !== "") {
-      let resources = await client.getAccountResources(balChkAddr);
-      // Find Aptos coin resourse
-      let accountResource = resources.find(
-        (r) => r.type === "0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>"
-      );
-      setChkBal(parseInt(accountResource?.data.coin.value));
+      setChkBal(await walletClient.balance(balChkAddr));
     }
   };
   const sendToken = async () => {
-    const token = new TypeTagStruct(
-      StructTag.fromString("0x1::aptos_coin::AptosCoin")
-    );
-    const scriptFunctionPayload = new TransactionPayloadScriptFunction(
-      ScriptFunction.natural(
-        // Fully qualified module name, `AccountAddress::ModuleName`
-        "0x1::coin",
-        // Module function
-        "transfer",
-        // The coin type to transfer
-        [token],
-        // Arguments for function `transfer`: receiver account address and amount to transfer
-        [
-          BCS.bcsToBytes(AccountAddress.fromHex(recAddr)),
-          BCS.bcsSerializeUint64(sendAmount),
-        ]
-      )
-    );
-    // Get the sequence number from account 1 && Get chain ID
-    const [{ sequence_number: sequenceNumber }, chainId] = await Promise.all([
-      client.getAccount(addr1),
-      client.getChainId(),
-    ]);
-
-    const rawTxn = new RawTransaction(
-      // Transaction sender account address
-      AccountAddress.fromHex(addr1),
-      bigInt(sequenceNumber),
-      scriptFunctionPayload,
-      // Max gas unit to spend
-      1000n,
-      // Gas price per unit
-      1n,
-      // Expiration timestamp. Transaction is discarded if it is not executed within 10 seconds from now.
-      bigInt(Math.floor(Date.now() / 1000) + 10),
-      new ChainId(chainId)
-    );
-    // Sign the raw transaction with account1's private key
-    const bcsTxn = AptosClient.generateBCSTransaction(account1, rawTxn);
-    // Submit the signed Transaction
-    const transactionRes = await client.submitSignedBCSTransaction(bcsTxn);
-    // Wait for the transaction to complete
-    await client.waitForTransaction(transactionRes.hash);
+    console.log(account1);
+    let txnHash = await walletClient.sendToken(account1, recAddr, sendAmount);
     balance();
-    setTxHash([transactionRes.hash, ...txHash]);
+    setTxHash([txnHash, ...txHash]);
   };
   const importAccount = async () => {
-    const seed = bip39.mnemonicToSeedSync(mnemonic.toString());
-    const node = HDKey.fromMasterSeed(Buffer.from(seed));
-    const exKey = node.derive(`m/44'/${COIN_TYPE}'/0'/0/0`);
-    account1 = new AptosAccount(exKey.privateKey);
-    console.log("account222 : ", account1);
+    account1 = await walletClient.getAccountFromMnemonic(mnemonic);
+    console.log("account1 :", account1);
     setAddr1(account1.address().hexString);
-    // setPrivate1(accountMetaData[0].privateKeyHex);
     setIsConnected(true);
     setIsImporting(false);
-    let resources = await client.getAccountResources(account1.address());
-    // Find Aptos coin resourse
-    let accountResource = resources.find(
-      (r) => r.type === "0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>"
-    );
-    setBal1(parseInt(accountResource?.data.coin.value));
-    console.log("mnemonic :", mnemonic);
-    // console.log(account1);
-  };
-  const selectImportAccount = () => {
-    setIsImporting(true);
+    setBal1(await walletClient.balance((await account1).address()));
   };
   const getTxns = async function accountTransactions() {
-    const data = await client.getAccountTransactions(addr1);
-    const transactions = data.map((item) => ({
-      data: item.payload,
-      from: item.sender,
-      gas: item.gas_used,
-      gasPrice: item.gas_unit_price,
-      hash: item.hash,
-      success: item.success,
-      timestamp: item.timestamp,
-      toAddress: item.payload.arguments[0],
-      price: item.payload.arguments[1],
-      type: item.type,
-      version: item.version,
-      vmStatus: item.vm_status,
-    }));
-    console.log("transactions :", transactions);
-    setTxns(...transactions);
+    let txns = await walletClient.accountTransactions(addr1);
+    setTxns(...txns);
   };
   return (
     <div className="App">
@@ -197,7 +82,9 @@ function App() {
           {isConnected === false && isImporting === false ? (
             <>
               <button onClick={create}>Create Account</button>
-              <button onClick={selectImportAccount}>Import Account</button>
+              <button onClick={() => setIsImporting(true)}>
+                Import Account
+              </button>
             </>
           ) : (
             <>
@@ -244,8 +131,11 @@ function App() {
                 <button onClick={sendToken}> Send</button>
                 <h2>Transaction Hash</h2>
 
-                {txHash.length > 0 &&
-                  txHash.map((txn) => <p key={txn}>{txn}</p>)}
+                {txHash.length > 0 ? (
+                  txHash.map((txn) => <p key={txn}>{txn}</p>)
+                ) : (
+                  <p>No Transactions Recorded</p>
+                )}
               </div>
             </>
           ) : null}
