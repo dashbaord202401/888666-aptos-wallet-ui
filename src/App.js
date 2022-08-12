@@ -21,7 +21,7 @@ function App() {
   const [chkBal, setChkBal] = useState("");
   const [mnemonic, setMnemonic] = useState("");
   const [txHash, setTxHash] = useState([]);
-  // const [txns, setTxns] = useState([]);
+  const [txns, setTxns] = useState([]);
 
   const create = async () => {
     let { account, mnemonic } = await walletClient.createNewAccount();
@@ -60,6 +60,7 @@ function App() {
       "0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>"
     );
     console.log(transactions);
+    setTxns(transactions);
   };
   return (
     <div className="App">

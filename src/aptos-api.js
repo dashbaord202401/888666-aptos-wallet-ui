@@ -249,9 +249,9 @@ export class WalletClient {
     let withdrawals = await this.getEvents(address, coin, "withdraw_events");
     let deposits = await this.getEvents(address, coin, "deposit_events");
     transactions.push(...withdrawals, ...deposits);
-    transactions.sort((a, b) => {
+    let sortedTransactions = transactions.sort((a, b) => {
       return b.version - a.version;
     });
-    return Promise.resolve(transactions);
+    return sortedTransactions;
   }
 }
