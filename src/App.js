@@ -21,7 +21,7 @@ function App() {
   const [chkBal, setChkBal] = useState("");
   const [mnemonic, setMnemonic] = useState("");
   const [txHash, setTxHash] = useState([]);
-  const [txns, setTxns] = useState([]);
+  // const [txns, setTxns] = useState([]);
 
   const create = async () => {
     let { account, mnemonic } = await walletClient.createNewAccount();
@@ -29,6 +29,7 @@ function App() {
     setSeed(mnemonic);
     setAddr1(account1.address().hexString);
     setIsConnected(true);
+    await walletClient.initialize(account.address().hexString);
     setBal1(await walletClient.balance(account1.address()));
   };
   const balance = async () => {
@@ -60,7 +61,11 @@ function App() {
       "0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>"
     );
     console.log(transactions);
-    setTxns(transactions);
+    // setTxns(transactions);
+    //   let coin =
+    //     "0x43417434fd869edee76cca2a4d2301e528a1551b1d719b75c350c3c97d15b8b9::coins::BTC";
+    //   let reg = await walletClient.registerCoin(account1, coin);
+    //   console.log(reg);
   };
   return (
     <div className="App">
