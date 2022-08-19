@@ -55,18 +55,20 @@ function App() {
     setIsImporting(false);
     setBal1(await walletClient.balance((await account1).address()));
   };
+  // const register = async () => {
+  //   let coin =
+  //     "0x43417434fd869edee76cca2a4d2301e528a1551b1d719b75c350c3c97d15b8b9::coins::BTC";
+  //   let reg = await walletClient.registerCoin(account1, coin);
+  //   console.log(reg);
+  // };
   const getTxns = async function accountTransactions() {
     let transactions = await walletClient.getAllTransactions(
       addr1,
       "0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>"
     );
     console.log(transactions);
-    // setTxns(transactions);
-    //   let coin =
-    //     "0x43417434fd869edee76cca2a4d2301e528a1551b1d719b75c350c3c97d15b8b9::coins::BTC";
-    //   let reg = await walletClient.registerCoin(account1, coin);
-    //   console.log(reg);
   };
+
   return (
     <div className="App">
       <h1>Aptos Wallet</h1>

@@ -177,6 +177,7 @@ export class WalletClient {
           amount.toString(),
         ],
       };
+      console.log("payload ::", payload);
       const txnRequest = await this.client.generateTransaction(
         account.address(),
         payload,
@@ -184,8 +185,12 @@ export class WalletClient {
           max_gas_amount: "1000",
         }
       );
+      console.log("txnRequest ::", txnRequest);
       const signedTxn = await this.client.signTransaction(account, txnRequest);
+      console.log("signedTxn ::", signedTxn.signature);
+      console.log("signedTxn ::", signedTxn);
       const res = await this.client.submitTransaction(signedTxn);
+      console.log("res ::", res);
       await this.client.waitForTransaction(res.hash);
       return Promise.resolve(res.hash);
     } catch (err) {
@@ -254,7 +259,6 @@ export class WalletClient {
     });
     return sortedTransactions;
   }
-
   async getTransactionDetails(version) {
     // https://fullnode.devnet.aptoslabs.com/transactions/19957514
     let endpointUrl = `${this.client.nodeUrl}/transactions/${version}/`;
@@ -267,5 +271,20 @@ export class WalletClient {
     }
     let res = response.json();
     return res;
+  }
+  async registerCoin(account, coin_type_path) {
+    // coin_type_path: like 0x${coinTypeAddress}::moon_coin::MoonCoin
+    const payload = {
+      type: "script_function_payload",
+      function: "0x1::coins::register",
+      type_arguments: [coin_type_path],
+      arguments: [],
+    };
+
+    const txnHash = await this.token.submitTransactionHelper(account, payload);
+    const resp = await this.client.getTransaction(txnHash);
+    const status = { success: resp.success, vm_status: resp.vm_status };
+
+    return { txnHash, ...status };
   }
 }
