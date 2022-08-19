@@ -26,6 +26,7 @@ function App() {
   const create = async () => {
     let { account, mnemonic } = await walletClient.createNewAccount();
     account1 = account;
+    console.log(account);
     setSeed(mnemonic);
     setAddr1(account1.address().hexString);
     setIsConnected(true);
@@ -53,7 +54,7 @@ function App() {
     setAddr1(account1.address().hexString);
     setIsConnected(true);
     setIsImporting(false);
-    setBal1(await walletClient.balance((await account1).address()));
+    setBal1(await walletClient.balance(account1.address()));
   };
   // const register = async () => {
   //   let coin =
@@ -61,13 +62,17 @@ function App() {
   //   let reg = await walletClient.registerCoin(account1, coin);
   //   console.log(reg);
   // };
-  const getTxns = async function accountTransactions() {
+  const getTxns = async () => {
     let transactions = await walletClient.getAllTransactions(
       addr1,
       "0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>"
     );
-    console.log(transactions);
+    console.log("transactions ::", transactions);
   };
+  // const getAirdrop = async () => {
+  //   await walletClient.airdrop(addr1);
+  //   console.log("Airdrop Success");
+  // };
 
   return (
     <div className="App">
