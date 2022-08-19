@@ -177,7 +177,6 @@ export class WalletClient {
           amount.toString(),
         ],
       };
-      console.log("payload ::", payload);
       const txnRequest = await this.client.generateTransaction(
         account.address(),
         payload,
@@ -185,12 +184,8 @@ export class WalletClient {
           max_gas_amount: "1000",
         }
       );
-      console.log("txnRequest ::", txnRequest);
       const signedTxn = await this.client.signTransaction(account, txnRequest);
-      console.log("signedTxn ::", signedTxn.signature);
-      console.log("signedTxn ::", signedTxn);
       const res = await this.client.submitTransaction(signedTxn);
-      console.log("res ::", res);
       await this.client.waitForTransaction(res.hash);
       return Promise.resolve(res.hash);
     } catch (err) {
