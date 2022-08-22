@@ -193,7 +193,6 @@ export class WalletClient {
       return Promise.reject(err);
     }
   }
-
   async getEvents(address, eventHandleStruct, fieldName) {
     let resn = await this.client.getEventsByEventHandle(
       address,
@@ -225,24 +224,7 @@ export class WalletClient {
     let res = response.json();
     return res;
   }
-  //   async registerCoin(account, coin_type_path) {
-  //     // coin_type_path: like 0x${coinTypeAddress}::moon_coin::MoonCoin
-  //     const payload = {
-  //       type: "script_function_payload",
-  //       function: "0x1::coins::register",
-  //       type_arguments: [coin_type_path],
-  //       arguments: [],
-  //     };
-
-  //     const txnHash = await this.token.submitTransactionHelper(account, payload);
-  //     const resp = await this.client.getTransaction(txnHash);
-  //     const status = { success: resp.success, vm_status: resp.vm_status };
-
-  //     return { txnHash, ...status };
-  //   }
-  // }
   async registerCoin(account, coin_type_path) {
-    console.log("account, coin_type_path", account, coin_type_path);
     const token = new TxnBuilderTypes.TypeTagStruct(
       TxnBuilderTypes.StructTag.fromString(coin_type_path)
     );
@@ -256,12 +238,10 @@ export class WalletClient {
           []
         )
       );
-
     const rawTxn = await this.client.generateRawTransaction(
       account.address(),
       entryFunctionPayload
     );
-
     const bcsTxn = AptosClient.generateBCSTransaction(account, rawTxn);
     const transactionRes = await this.client.submitSignedBCSTransaction(bcsTxn);
     await this.client.waitForTransaction(transactionRes.hash);
@@ -271,32 +251,3 @@ export class WalletClient {
     return { txnHash, ...status };
   }
 }
-
-// Payloads
-// register btc
-// {
-//   "arguments": [
-//     "0x43417434fd869edee76cca2a4d2301e528a1551b1d719b75c350c3c97d15b8b9"
-//   ],
-//   "function": "0x43417434fd869edee76cca2a4d2301e528a1551b1d719b75c350c3c97d15b8b9::faucet::request",
-//   "type": "entry_function_payload",
-//   "type_arguments": [
-//     "0x43417434fd869edee76cca2a4d2301e528a1551b1d719b75c350c3c97d15b8b9::coins::BTC"
-//   ]
-// }
-
-// usdt to apt swap
-// {
-//   "arguments": [
-//     "0x43417434fd869edee76cca2a4d2301e528a1551b1d719b75c350c3c97d15b8b9",
-//     "100000000",
-//     "42129665"
-//   ],
-//   "function": "0x43417434fd869edee76cca2a4d2301e528a1551b1d719b75c350c3c97d15b8b9::scripts::swap",
-//   "type": "entry_function_payload",
-//   "type_arguments": [
-//     "0x43417434fd869edee76cca2a4d2301e528a1551b1d719b75c350c3c97d15b8b9::coins::USDT",
-//     "0x1::aptos_coin::AptosCoin",
-//     "0x43417434fd869edee76cca2a4d2301e528a1551b1d719b75c350c3c97d15b8b9::lp::LP<0x1::aptos_coin::AptosCoin, 0x43417434fd869edee76cca2a4d2301e528a1551b1d719b75c350c3c97d15b8b9::coins::USDT>"
-//   ]
-// }
